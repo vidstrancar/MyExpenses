@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MyExpenses.Dtos;
 using MyExpenses.Models;
 using MyExpenses.Services;
 
@@ -26,6 +27,15 @@ namespace MyExpenses.Controllers
             
             return Ok(expense);
         }
+        
+        [HttpPost]
+        public async Task<ActionResult<Expense>> AddExpense(CreateExpenseRequest createExpenseRequest)
+        {
+            var createdExpense = await expensesService.CreateExpenseAsync(createExpenseRequest);
+            return CreatedAtAction(nameof(GetExpenseById), new { id = createdExpense.Id }, createdExpense);
+        }
+        
+        
         
         
     }

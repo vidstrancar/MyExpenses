@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyExpenses.Data;
+using MyExpenses.Dtos;
 using MyExpenses.Models;
 
 namespace MyExpenses.Services;
@@ -18,9 +19,20 @@ public class ExpensesService(AppDbContext context): IExpensesService
         return result;
     }
 
-    public Task<Expense> AddExpenseAsync(Expense expense)
+    public async Task<Expense> CreateExpenseAsync(CreateExpenseRequest createExpenseRequest)
     {
-        throw new NotImplementedException();
+        var newExpense = new Expense()
+        {
+            Category = createExpenseRequest.Category,
+            Description = createExpenseRequest.Description,
+            Amount = createExpenseRequest.Amount,
+            Date = createExpenseRequest.Date
+        };
+        
+        context.Expenses.Add(newExpense); 
+        await context.SaveChangesAsync();
+        
+        return newExpense;
     }
 
     public Task<bool> UpdateExpenseAsync(int id, Expense expense)
