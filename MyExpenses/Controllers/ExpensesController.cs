@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyExpenses.Dtos;
 using MyExpenses.Models;
@@ -34,9 +33,25 @@ namespace MyExpenses.Controllers
             var createdExpense = await expensesService.CreateExpenseAsync(createExpenseRequest);
             return CreatedAtAction(nameof(GetExpenseById), new { id = createdExpense.Id }, createdExpense);
         }
+
+        [HttpPut("{id}")]
+        public async Task<ActionResult<Expense>> UpdateExpense(UpdateExpenseRequest updateExpenseRequest)
+        {
+            var updatedExpense = await expensesService.UpdateExpenseAsync(updateExpenseRequest.Id, updateExpenseRequest);
+
+            if (updatedExpense == null)
+            {
+                return NotFound($"Expense with id {updateExpenseRequest.Id} not found");   
+            }
+            
+            return Ok(updatedExpense);
+        }
         
-        
-        
-        
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteExpense(int id)
+        {
+            var deleted = await expensesService.DeleteExpenseAsync(id);
+            return deleted ? Ok($"Expense with id {id} is deleted") : NotFound($"Expense with id {id} not found");
+        }       
     }
 }

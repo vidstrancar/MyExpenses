@@ -21,27 +21,34 @@ public class ExpensesService(AppDbContext context): IExpensesService
 
     public async Task<Expense> CreateExpenseAsync(CreateExpenseRequest createExpenseRequest)
     {
-        var newExpense = new Expense()
-        {
-            Category = createExpenseRequest.Category,
-            Description = createExpenseRequest.Description,
-            Amount = createExpenseRequest.Amount,
-            Date = createExpenseRequest.Date
-        };
-        
+        var newExpense = createExpenseRequest.ToExpense();
         context.Expenses.Add(newExpense); 
         await context.SaveChangesAsync();
         
         return newExpense;
     }
 
-    public Task<bool> UpdateExpenseAsync(int id, Expense expense)
+    public async Task<Expense?> UpdateExpenseAsync(int id, UpdateExpenseRequest updateExpenseRequest)
     {
-        throw new NotImplementedException();
+        var existingExpense = await context.Expenses.FindAsync(id);
+        if (existingExpense == null) return null;
+        
+        existingExpense.Category = updateExpenseRequest.Category;
+        existingExpense.Description = updateExpenseRequest.Description;
+        existingExpense.Amount = updateExpenseRequest.Amount;
+        existingExpense.Date = updateExpenseRequest.Date;
+        
+        await context.SaveChangesAsync();
+        return existingExpense; 
     }
 
-    public Task<bool> DeleteExpenseAsync(int id)
+    public async Task<bool> DeleteExpenseAsync(int id)
     {
-        throw new NotImplementedException();
+        var existingExpense = await context.Expenses.FindAsync(id);
+        if (existingExpense == null) return false;
+        
+        context.Expenses.Remove(existingExpense);
+        await context.SaveChangesAsync();
+        return true;
     }
 }

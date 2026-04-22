@@ -8,6 +8,6 @@ public interface IExpensesService
     public Task<List<Expense>> GetAllExpensesAsync();
     public Task<Expense?> GetExpenseByIdAsync(int id);
     public Task<Expense> CreateExpenseAsync(CreateExpenseRequest createExpenseRequest);
-    public Task<bool> UpdateExpenseAsync(int id, Expense expense);
+    public Task<Expense?> UpdateExpenseAsync(int id, UpdateExpenseRequest updateExpenseRequest);
     public Task<bool> DeleteExpenseAsync(int id);
 }
