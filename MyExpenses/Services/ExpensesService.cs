@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using MyExpenses.Data;
 using MyExpenses.Dtos;
+using MyExpenses.Exceptions;
 using MyExpenses.Models;
 
 namespace MyExpenses.Services;
 
-public class ExpensesService(AppDbContext context): IExpensesService
+public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logger): IExpensesService
 {
     public async Task<List<Expense>> GetAllExpensesAsync()
     {
@@ -21,67 +22,69 @@ public class ExpensesService(AppDbContext context): IExpensesService
 
     public async Task<Expense> CreateExpenseAsync(CreateExpenseRequest createExpenseRequest)
     {
+        var newExpense = createExpenseRequest.ToExpense();
+        context.Expenses.Add(newExpense);
+        
         try
         {
-            var newExpense = createExpenseRequest.ToExpense();
-            context.Expenses.Add(newExpense);
             await context.SaveChangesAsync();
             return newExpense;
         }
         catch (DbUpdateException exception)
         {
-            throw new Exception("Could not save new expense to the database", exception);
-        }
-        catch (Exception exception)
-        {
-            throw new Exception("Unexpected exception in CreateExpenseAsync", exception);
+            logger.LogError(exception, "Database error creating new expense");
+            throw new ExpensesServiceException("Could not save new expense to the database", exception);
         }
     }
 
     public async Task<Expense?> UpdateExpenseAsync(int id, UpdateExpenseRequest updateExpenseRequest)
     {
+        var existingExpense = await context.Expenses.FindAsync(id);
+        if (existingExpense == null) return null;
+        
+        existingExpense.Category = updateExpenseRequest.Category;
+        existingExpense.Description = updateExpenseRequest.Description;
+        existingExpense.Amount = updateExpenseRequest.Amount;
+        existingExpense.Date = updateExpenseRequest.Date;
+
         try
         {
-            var existingExpense = await context.Expenses.FindAsync(id);
-            if (existingExpense == null) return null;
-        
-            existingExpense.Category = updateExpenseRequest.Category;
-            existingExpense.Description = updateExpenseRequest.Description;
-            existingExpense.Amount = updateExpenseRequest.Amount;
-            existingExpense.Date = updateExpenseRequest.Date;
-        
             await context.SaveChangesAsync();
-            return existingExpense; 
+            return existingExpense;
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            logger.LogError(exception, "Concurrency conflict updating expense {Id}", id);
+            throw new ExpensesServiceException("The expense was already modified or deleted by another user.", exception);
         }
         catch (DbUpdateException exception)
         {
-            throw new Exception("Could not update expense in the database", exception);
+            logger.LogError(exception, "Database error updating expense {Id}", id);
+            throw new ExpensesServiceException("Could not update expense in the database", exception);
         }
-        catch (Exception exception)
-        {
-            throw new Exception("Unexpected exception in UpdateExpenseAsync", exception);
-        }
-        
     }
 
     public async Task<bool> DeleteExpenseAsync(int id)
     {
+        var existingExpense = await context.Expenses.FindAsync(id);
+        if (existingExpense == null) return false;
+        
+        context.Expenses.Remove(existingExpense);
+        
         try
         {
-            var existingExpense = await context.Expenses.FindAsync(id);
-            if (existingExpense == null) return false;
-        
-            context.Expenses.Remove(existingExpense);
             await context.SaveChangesAsync();
             return true;
         }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            logger.LogError(exception, "Concurrency conflict deleting expense {Id}", id);
+            throw new ExpensesServiceException("The expense was already modified or deleted by another user.", exception);
+        }
         catch (DbUpdateException exception)
         {
-            throw new Exception("Could not delete expense from the database", exception);
+            logger.LogError(exception, "Database error deleting expense {Id}", id);
+            throw new ExpensesServiceException("Could not delete expense from the database", exception);
         }
-        catch (Exception exception)
-        {
-            throw new Exception("Unexpected exception in DeleteExpenseAsync", exception);
-        }       
     }
 }
