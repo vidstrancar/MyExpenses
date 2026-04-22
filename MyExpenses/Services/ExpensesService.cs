@@ -21,34 +21,67 @@ public class ExpensesService(AppDbContext context): IExpensesService
 
     public async Task<Expense> CreateExpenseAsync(CreateExpenseRequest createExpenseRequest)
     {
-        var newExpense = createExpenseRequest.ToExpense();
-        context.Expenses.Add(newExpense); 
-        await context.SaveChangesAsync();
-        
-        return newExpense;
+        try
+        {
+            var newExpense = createExpenseRequest.ToExpense();
+            context.Expenses.Add(newExpense);
+            await context.SaveChangesAsync();
+            return newExpense;
+        }
+        catch (DbUpdateException exception)
+        {
+            throw new Exception("Could not save new expense to the database", exception);
+        }
+        catch (Exception exception)
+        {
+            throw new Exception("Unexpected exception in CreateExpenseAsync", exception);
+        }
     }
 
     public async Task<Expense?> UpdateExpenseAsync(int id, UpdateExpenseRequest updateExpenseRequest)
     {
-        var existingExpense = await context.Expenses.FindAsync(id);
-        if (existingExpense == null) return null;
+        try
+        {
+            var existingExpense = await context.Expenses.FindAsync(id);
+            if (existingExpense == null) return null;
         
-        existingExpense.Category = updateExpenseRequest.Category;
-        existingExpense.Description = updateExpenseRequest.Description;
-        existingExpense.Amount = updateExpenseRequest.Amount;
-        existingExpense.Date = updateExpenseRequest.Date;
+            existingExpense.Category = updateExpenseRequest.Category;
+            existingExpense.Description = updateExpenseRequest.Description;
+            existingExpense.Amount = updateExpenseRequest.Amount;
+            existingExpense.Date = updateExpenseRequest.Date;
         
-        await context.SaveChangesAsync();
-        return existingExpense; 
+            await context.SaveChangesAsync();
+            return existingExpense; 
+        }
+        catch (DbUpdateException exception)
+        {
+            throw new Exception("Could not update expense in the database", exception);
+        }
+        catch (Exception exception)
+        {
+            throw new Exception("Unexpected exception in UpdateExpenseAsync", exception);
+        }
+        
     }
 
     public async Task<bool> DeleteExpenseAsync(int id)
     {
-        var existingExpense = await context.Expenses.FindAsync(id);
-        if (existingExpense == null) return false;
+        try
+        {
+            var existingExpense = await context.Expenses.FindAsync(id);
+            if (existingExpense == null) return false;
         
-        context.Expenses.Remove(existingExpense);
-        await context.SaveChangesAsync();
-        return true;
+            context.Expenses.Remove(existingExpense);
+            await context.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException exception)
+        {
+            throw new Exception("Could not delete expense from the database", exception);
+        }
+        catch (Exception exception)
+        {
+            throw new Exception("Unexpected exception in DeleteExpenseAsync", exception);
+        }       
     }
 }
