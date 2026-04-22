@@ -33,7 +33,10 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
         catch (DbUpdateException exception)
         {
             logger.LogError(exception, "Database error creating new expense");
-            throw new ExpensesServiceException("Could not save new expense to the database", exception);
+            throw new ExpensesServiceException(
+                "Could not save new expense to the database",
+                StatusCodes.Status400BadRequest,
+                exception);
         }
     }
 
@@ -55,7 +58,10 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
         catch (DbUpdateConcurrencyException exception)
         {
             logger.LogError(exception, "Concurrency conflict updating expense {Id}", id);
-            throw new ExpensesServiceException("The expense was already modified or deleted by another user.", exception);
+            throw new ExpensesServiceException(
+                "The expense was already modified or deleted by another user.",
+                StatusCodes.Status409Conflict,
+                exception);
         }
         catch (DbUpdateException exception)
         {
@@ -79,7 +85,10 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
         catch (DbUpdateConcurrencyException exception)
         {
             logger.LogError(exception, "Concurrency conflict deleting expense {Id}", id);
-            throw new ExpensesServiceException("The expense was already modified or deleted by another user.", exception);
+            throw new ExpensesServiceException(
+                "The expense was already modified or deleted by another user.",
+                StatusCodes.Status409Conflict,
+                exception);
         }
         catch (DbUpdateException exception)
         {
