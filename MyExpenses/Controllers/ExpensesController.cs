@@ -28,23 +28,33 @@ namespace MyExpenses.Controllers
         }
         
         [HttpPost]
-        public async Task<ActionResult<Expense>> AddExpense(CreateExpenseRequest createExpenseRequest)
+        public async Task<ActionResult<Expense>> CreateExpense(CreateExpenseRequest? createExpenseRequest)
         {
-            var createdExpense = await expensesService.CreateExpenseAsync(createExpenseRequest);
-            return CreatedAtAction(nameof(GetExpenseById), new { id = createdExpense.Id }, createdExpense);
+            if (createExpenseRequest == null)
+            {
+                return BadRequest("Request body cannot be null");  
+            }
+            
+            var expense = await expensesService.CreateExpenseAsync(createExpenseRequest);
+            return CreatedAtAction(nameof(GetExpenseById), new { id = expense.Id }, expense);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<Expense>> UpdateExpense(UpdateExpenseRequest updateExpenseRequest)
+        public async Task<ActionResult<Expense>> UpdateExpense(int id, UpdateExpenseRequest? updateExpenseRequest)
         {
-            var updatedExpense = await expensesService.UpdateExpenseAsync(updateExpenseRequest.Id, updateExpenseRequest);
-
-            if (updatedExpense == null)
+            if (updateExpenseRequest == null)
             {
-                return NotFound($"Expense with id {updateExpenseRequest.Id} not found");   
+                return BadRequest("Request body cannot be null");
             }
             
-            return Ok(updatedExpense);
+            var expense = await expensesService.UpdateExpenseAsync(id, updateExpenseRequest);
+
+            if (expense == null)
+            {
+                return NotFound($"Expense with id {id} not found");   
+            }
+            
+            return Ok(expense);
         }
         
         [HttpDelete("{id}")]
