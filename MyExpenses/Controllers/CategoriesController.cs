@@ -47,7 +47,7 @@ namespace MyExpenses.Controllers
                 return BadRequest("Request body cannot be null");  
             }
             
-            var category = await categoriesService.UpdateCategoryAsync(updateCategoryRequest);
+            var category = await categoriesService.UpdateCategoryAsync(id, updateCategoryRequest);
 
             if (category == null)
             {
