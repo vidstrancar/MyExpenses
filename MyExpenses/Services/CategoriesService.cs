@@ -45,7 +45,8 @@ public class CategoriesService(AppDbContext context, ILogger<CategoriesService> 
         var category = await context.Categories.FindAsync(id);
         if (category == null) return null;
 
-        if (updateCategoryRequest.Name != null) category.Name = updateCategoryRequest.Name;
+        var newName = updateCategoryRequest.Name;
+        if (!string.IsNullOrEmpty(newName)) category.Name = newName;
         if (updateCategoryRequest.ParentId != null) category.ParentId = updateCategoryRequest.ParentId;
 
         try
