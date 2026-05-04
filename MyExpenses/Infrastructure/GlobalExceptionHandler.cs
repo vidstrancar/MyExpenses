@@ -15,6 +15,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger): IEx
         
         var (statusCode, title) = exception switch {
             ExpensesServiceException ex => (ex.StatusCode, "Service Error"),
+            CategoriesServiceException ex => (ex.StatusCode, "Service Error"),
             _ => (StatusCodes.Status500InternalServerError, "Server Error")
         };
 
