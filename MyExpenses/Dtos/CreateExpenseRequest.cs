@@ -5,8 +5,7 @@ namespace MyExpenses.Dtos;
 
 public class CreateExpenseRequest
 {
-    [StringLength(100)]
-    public string? Category { get; set; }
+    public int? CategoryId { get; set; }
     
     [StringLength(500)]
     public string? Description { get; set; }
@@ -22,7 +21,7 @@ public class CreateExpenseRequest
     {
         return new Expense()
         {
-            Category = Category,
+            CategoryId = CategoryId,
             Description = Description,
             Amount = Amount,
             Date = Date

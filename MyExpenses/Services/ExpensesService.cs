@@ -10,18 +10,35 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
 {
     public async Task<List<Expense>> GetAllExpensesAsync()
     {
-        var result = await context.Expenses.ToListAsync();
+        var result = await context.Expenses
+            .Include(e => e.Category)
+            .ToListAsync();
         return result;
     }
 
     public async Task<Expense?> GetExpenseByIdAsync(int id)
     {
-        var result = await context.Expenses.FindAsync(id);
+        var result = await context.Expenses
+            .Include(e => e.Category)
+            .FirstOrDefaultAsync(e => e.Id == id);
         return result;
     }
 
     public async Task<Expense> CreateExpenseAsync(CreateExpenseRequest createExpenseRequest)
     {
+        var categoryId = createExpenseRequest.CategoryId;
+        if (categoryId is not null)
+        {
+            var categoryExists = await context.Categories.AnyAsync(cat => cat.Id == categoryId);
+            if (!categoryExists)
+            {
+                throw new ExpensesServiceException(
+                    $"Category with id {categoryId} does not exist",
+                    StatusCodes.Status400BadRequest,
+                    null!);
+            }
+        }
+        
         var newExpense = createExpenseRequest.ToExpense();
         context.Expenses.Add(newExpense);
         
@@ -45,7 +62,20 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
         var existingExpense = await context.Expenses.FindAsync(id);
         if (existingExpense == null) return null;
         
-        existingExpense.Category = updateExpenseRequest.Category;
+        var categoryId = updateExpenseRequest.CategoryId;
+        if (categoryId is not null)
+        {
+            var categoryExists = await context.Categories.AnyAsync(cat => cat.Id == categoryId);
+            if (!categoryExists)
+            {
+                throw new ExpensesServiceException(
+                    $"Category with id {categoryId} does not exist",
+                    StatusCodes.Status400BadRequest,
+                    null!);
+            }
+        }
+        
+        existingExpense.CategoryId = updateExpenseRequest.CategoryId;
         existingExpense.Description = updateExpenseRequest.Description;
         existingExpense.Amount = updateExpenseRequest.Amount;
         existingExpense.Date = updateExpenseRequest.Date;

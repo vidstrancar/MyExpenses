@@ -5,8 +5,7 @@ namespace MyExpenses.Dtos;
 
 public class UpdateExpenseRequest
 {
-    [StringLength(100)]
-    public string? Category { get; set; }
+    public int? CategoryId { get; set; }
     
     [StringLength(500)]
     public string? Description { get; set; }
