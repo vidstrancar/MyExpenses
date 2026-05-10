@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
@@ -39,7 +40,12 @@ namespace MyExpenses.Controllers
             
             return Ok(user);
         }
-
         
+        [Authorize]
+        [HttpGet("authTest")]
+        public ActionResult AuthenticatedOnly()
+        {
+            return Ok("This is an authenticated only endpoint");
+        }
     }
 }

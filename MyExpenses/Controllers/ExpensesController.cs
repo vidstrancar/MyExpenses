@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyExpenses.Dtos;
 using MyExpenses.Models;
@@ -5,6 +6,7 @@ using MyExpenses.Services;
 
 namespace MyExpenses.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ExpensesController(IExpensesService expensesService) : ControllerBase
