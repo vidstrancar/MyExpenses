@@ -12,29 +12,29 @@ namespace MyExpenses.Services;
 
 public class AuthService(AppDbContext context, IConfiguration configuration): IAuthService
 {
-    public async Task<User?> RegisterUserAsync(UserDto userDto)
+    public async Task<UserResponseDto?> RegisterUserAsync(UserRequestDto userRequestDto)
     {
-        if (await context.Users.AnyAsync(u => u.Username == userDto.Username))
+        if (await context.Users.AnyAsync(u => u.Username == userRequestDto.Username))
         {
             return null;
         }
 
         var user = new User();
         
-        var hashedPassword = new PasswordHasher<User>().HashPassword(user, userDto.Password);
+        var hashedPassword = new PasswordHasher<User>().HashPassword(user, userRequestDto.Password);
             
-        user.Username = userDto.Username;
+        user.Username = userRequestDto.Username;
         user.PasswordHash = hashedPassword;
         
         context.Users.Add(user);
         await context.SaveChangesAsync();
             
-        return user;
+        return user.ToUserResponseDto();
     }
 
-    public async Task<string?> LoginUserAsync(UserDto userDto)
+    public async Task<string?> LoginUserAsync(UserRequestDto userRequestDto)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Username == userDto.Username);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Username == userRequestDto.Username);
 
         if (user == null)
         {
@@ -42,7 +42,7 @@ public class AuthService(AppDbContext context, IConfiguration configuration): IA
         }
             
         var passwordVerification = new PasswordHasher<User>()
-            .VerifyHashedPassword(user, user.PasswordHash, userDto.Password);
+            .VerifyHashedPassword(user, user.PasswordHash, userRequestDto.Password);
 
         if (passwordVerification == PasswordVerificationResult.Failed)
         {

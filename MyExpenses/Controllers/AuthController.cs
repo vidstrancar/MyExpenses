@@ -16,9 +16,9 @@ namespace MyExpenses.Controllers
     public class AuthController(IAuthService authService) : ControllerBase
     {
         [HttpPost("register")]
-        public async Task<ActionResult<User>> Register(UserDto userDto)
+        public async Task<ActionResult<UserResponseDto>> Register(UserRequestDto userRequestDto)
         {
-            var user = await authService.RegisterUserAsync(userDto);
+            var user = await authService.RegisterUserAsync(userRequestDto);
 
             if (user == null)
             {
@@ -29,9 +29,9 @@ namespace MyExpenses.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<ActionResult<string>> Login(UserDto userDto)
+        public async Task<ActionResult<string>> Login(UserRequestDto userRequestDto)
         {
-            var user = await authService.LoginUserAsync(userDto);
+            var user = await authService.LoginUserAsync(userRequestDto);
 
             if (user == null)
             {

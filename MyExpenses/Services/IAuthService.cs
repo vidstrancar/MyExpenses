@@ -5,6 +5,6 @@ namespace MyExpenses.Services;
 
 public interface IAuthService
 {
-    public Task<User?> RegisterUserAsync(UserDto userDto);
-    public Task<string?> LoginUserAsync(UserDto userDto);
+    public Task<UserResponseDto?> RegisterUserAsync(UserRequestDto userRequestDto);
+    public Task<string?> LoginUserAsync(UserRequestDto userRequestDto);
 }
