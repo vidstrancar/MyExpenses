@@ -6,26 +6,40 @@ using MyExpenses.Models;
 
 namespace MyExpenses.Services;
 
-public class CategoriesService(AppDbContext context, ILogger<CategoriesService> logger): ICategoriesService
+public class CategoriesService(
+    AppDbContext context,
+    IUserContext userContext,
+    ILogger<CategoriesService> logger): ICategoriesService
 {
     public async Task<List<Category>> GetAllCategoriesAsync()
     {
-        var result = await context.Categories.ToListAsync();
+        var result = await context.Categories
+            .Where(c => c.UserId == userContext.UserId)
+            .Include(c => c.User)
+            .ToListAsync();
         return result;
     }
 
     public async Task<Category?> GetCategoryByIdAsync(int id)
     {
-        var result = await context.Categories.FindAsync(id);
+        var result = await context.Categories
+            .Where(c => c.UserId == userContext.UserId)
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.Id == id);
         return result;
     }
 
     public async Task<Category> CreateCategoryAsync(CreateCategoryRequest createCategoryRequest)
     {
+        var currentUserId = userContext.UserId;
+        
         if (createCategoryRequest.ParentId is not null)
         {
             var parentId = createCategoryRequest.ParentId.Value;
-            var parentExists = await context.Categories.AnyAsync(cat => cat.Id == parentId);
+            var parentExists = await context.Categories
+                .Where(cat => cat.UserId == currentUserId)
+                .AnyAsync(cat => cat.Id == parentId);
+            
             if (!parentExists)
             {
                 logger.LogError("Parent category with id {Id} does not exist", parentId);
@@ -42,7 +56,10 @@ public class CategoriesService(AppDbContext context, ILogger<CategoriesService> 
         try
         {
             await context.SaveChangesAsync();
-            return category;
+            return await context.Categories
+                .Where(c => c.UserId == currentUserId)
+                .Include(c => c.User)
+                .FirstAsync(c => c.Id == category.Id);
         }
         catch (DbUpdateException exception)
         {
@@ -56,7 +73,12 @@ public class CategoriesService(AppDbContext context, ILogger<CategoriesService> 
 
     public async Task<Category?> UpdateCategoryAsync(int id, UpdateCategoryRequest updateCategoryRequest)
     {
-        var category = await context.Categories.FindAsync(id);
+        var currentUserId = userContext.UserId;
+        var category = await context.Categories
+            .Where(c => c.UserId == currentUserId)
+            .Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.Id == id);
+        
         if (category == null) return null;
 
         var newName = updateCategoryRequest.Name;
@@ -73,7 +95,10 @@ public class CategoriesService(AppDbContext context, ILogger<CategoriesService> 
                     null!);
             }
             
-            var parentExists = await context.Categories.AnyAsync(cat => cat.Id == newParentId);
+            var parentExists = await context.Categories
+                .Where(cat => cat.UserId == currentUserId)
+                .AnyAsync(cat => cat.Id == newParentId);
+            
             if (!parentExists)
             {
                 throw new CategoriesServiceException(
@@ -116,7 +141,11 @@ public class CategoriesService(AppDbContext context, ILogger<CategoriesService> 
     
     public async Task<bool> DeleteCategoryAsync(int id)
     {
-        var category = await context.Categories.FindAsync(id);
+        var currentUserId = userContext.UserId;
+        var category = await context.Categories
+            .Where(c => currentUserId == c.UserId)
+            .FirstOrDefaultAsync(c => c.Id == id);
+        
         if (category == null) return false;
 
         context.Categories.Remove(category);

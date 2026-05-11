@@ -4,7 +4,7 @@ namespace MyExpenses.Services;
 
 public class UserContext(IHttpContextAccessor accessor): IUserContext
 {
-    public Guid GetUserId
+    public Guid UserId
     {
         get
         {
