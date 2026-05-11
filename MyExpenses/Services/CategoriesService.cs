@@ -11,11 +11,13 @@ public class CategoriesService(
     IUserContext userContext,
     ILogger<CategoriesService> logger): ICategoriesService
 {
+    
+    private Guid CurrentUserId => userContext.UserId;
+    
     public async Task<List<Category>> GetAllCategoriesAsync()
     {
         var result = await context.Categories
-            .Where(c => c.UserId == userContext.UserId)
-            .Include(c => c.User)
+            .Where(c => c.UserId == CurrentUserId)
             .ToListAsync();
         return result;
     }
@@ -23,21 +25,18 @@ public class CategoriesService(
     public async Task<Category?> GetCategoryByIdAsync(int id)
     {
         var result = await context.Categories
-            .Where(c => c.UserId == userContext.UserId)
-            .Include(c => c.User)
+            .Where(c => c.UserId == CurrentUserId)
             .FirstOrDefaultAsync(c => c.Id == id);
         return result;
     }
 
     public async Task<Category> CreateCategoryAsync(CreateCategoryRequest createCategoryRequest)
     {
-        var currentUserId = userContext.UserId;
-        
         if (createCategoryRequest.ParentId is not null)
         {
             var parentId = createCategoryRequest.ParentId.Value;
             var parentExists = await context.Categories
-                .Where(cat => cat.UserId == currentUserId)
+                .Where(cat => cat.UserId == CurrentUserId)
                 .AnyAsync(cat => cat.Id == parentId);
             
             if (!parentExists)
@@ -57,8 +56,7 @@ public class CategoriesService(
         {
             await context.SaveChangesAsync();
             return await context.Categories
-                .Where(c => c.UserId == currentUserId)
-                .Include(c => c.User)
+                .Where(c => c.UserId == CurrentUserId)
                 .FirstAsync(c => c.Id == category.Id);
         }
         catch (DbUpdateException exception)
@@ -73,10 +71,8 @@ public class CategoriesService(
 
     public async Task<Category?> UpdateCategoryAsync(int id, UpdateCategoryRequest updateCategoryRequest)
     {
-        var currentUserId = userContext.UserId;
         var category = await context.Categories
-            .Where(c => c.UserId == currentUserId)
-            .Include(c => c.User)
+            .Where(c => c.UserId == CurrentUserId)
             .FirstOrDefaultAsync(c => c.Id == id);
         
         if (category == null) return null;
@@ -96,7 +92,7 @@ public class CategoriesService(
             }
             
             var parentExists = await context.Categories
-                .Where(cat => cat.UserId == currentUserId)
+                .Where(cat => cat.UserId == CurrentUserId)
                 .AnyAsync(cat => cat.Id == newParentId);
             
             if (!parentExists)
@@ -141,9 +137,8 @@ public class CategoriesService(
     
     public async Task<bool> DeleteCategoryAsync(int id)
     {
-        var currentUserId = userContext.UserId;
         var category = await context.Categories
-            .Where(c => currentUserId == c.UserId)
+            .Where(c => CurrentUserId == c.UserId)
             .FirstOrDefaultAsync(c => c.Id == id);
         
         if (category == null) return false;

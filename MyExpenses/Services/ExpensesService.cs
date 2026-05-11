@@ -11,24 +11,23 @@ public class ExpensesService(
     IUserContext userContext,
     ILogger<ExpensesService> logger): IExpensesService
 {
+    
+    private Guid CurrentUserId => userContext.UserId;
+    
     public async Task<List<Expense>> GetAllExpensesAsync()
     {
-        var currentUserId = userContext.UserId;
         var result = await context.Expenses
-            .Where(expense => expense.UserId == currentUserId)
+            .Where(expense => expense.UserId == CurrentUserId)
             .Include(e => e.Category)
-            .Include(e => e.User)
             .ToListAsync();
         return result;
     }
 
     public async Task<Expense?> GetExpenseByIdAsync(int id)
     {
-        var currentUserId = userContext.UserId;
         var result = await context.Expenses
-            .Where(expense => expense.UserId == currentUserId)
+            .Where(expense => expense.UserId == CurrentUserId)
             .Include(e => e.Category)
-            .Include(e => e.User)
             .FirstOrDefaultAsync(e => e.Id == id);
         return result;
     }
@@ -51,17 +50,15 @@ public class ExpensesService(
         }
         
         var newExpense = createExpenseRequest.ToExpense();
-        var currentUserId = userContext.UserId;
-        newExpense.UserId = currentUserId;
+        newExpense.UserId = CurrentUserId;
         context.Expenses.Add(newExpense);
         
         try
         {
             await context.SaveChangesAsync();
             return await context.Expenses
-                .Where(e => e.UserId == currentUserId)
+                .Where(e => e.UserId == CurrentUserId)
                 .Include(e => e.Category)
-                .Include(e => e.User)
                 .FirstAsync(e => e.Id == newExpense.Id);
         }
         catch (DbUpdateException exception)
@@ -76,13 +73,11 @@ public class ExpensesService(
 
     public async Task<Expense?> UpdateExpenseAsync(int id, UpdateExpenseRequest updateExpenseRequest)
     {
-        var currentUserId = userContext.UserId;
         var existingExpense =
             await context
                 .Expenses
                 .Include(expense => expense.Category)
-                .Include(expense => expense.User)
-                .FirstOrDefaultAsync(expense => expense.Id == id && expense.UserId == currentUserId);
+                .FirstOrDefaultAsync(expense => expense.Id == id && expense.UserId == CurrentUserId);
         
         if (existingExpense == null) return null;
         
@@ -90,7 +85,7 @@ public class ExpensesService(
         if (categoryId is not null)
         {
             var categoryExists = await context.Categories
-                .AnyAsync(cat => cat.Id == categoryId && cat.UserId == currentUserId);
+                .AnyAsync(cat => cat.Id == categoryId && cat.UserId == CurrentUserId);
             
             if (!categoryExists)
             {
@@ -128,9 +123,8 @@ public class ExpensesService(
 
     public async Task<bool> DeleteExpenseAsync(int id)
     {
-        var currentUserId = userContext.UserId;
         var existingExpense = await context.Expenses
-            .Where(e => e.UserId == currentUserId)
+            .Where(e => e.UserId == CurrentUserId)
             .FirstOrDefaultAsync(e => e.Id == id);
         
         if (existingExpense == null) return false;
