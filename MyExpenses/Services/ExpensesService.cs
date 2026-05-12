@@ -6,11 +6,18 @@ using MyExpenses.Models;
 
 namespace MyExpenses.Services;
 
-public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logger): IExpensesService
+public class ExpensesService(
+    AppDbContext context,
+    IUserContext userContext,
+    ILogger<ExpensesService> logger): IExpensesService
 {
+    
+    private Guid CurrentUserId => userContext.UserId;
+    
     public async Task<List<Expense>> GetAllExpensesAsync()
     {
         var result = await context.Expenses
+            .Where(expense => expense.UserId == CurrentUserId)
             .Include(e => e.Category)
             .ToListAsync();
         return result;
@@ -19,6 +26,7 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
     public async Task<Expense?> GetExpenseByIdAsync(int id)
     {
         var result = await context.Expenses
+            .Where(expense => expense.UserId == CurrentUserId)
             .Include(e => e.Category)
             .FirstOrDefaultAsync(e => e.Id == id);
         return result;
@@ -29,7 +37,9 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
         var categoryId = createExpenseRequest.CategoryId;
         if (categoryId is not null)
         {
-            var categoryExists = await context.Categories.AnyAsync(cat => cat.Id == categoryId);
+            var categoryExists = await context.Categories
+                .AnyAsync(cat => cat.Id == categoryId && cat.UserId == userContext.UserId);
+            
             if (!categoryExists)
             {
                 throw new ExpensesServiceException(
@@ -40,12 +50,16 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
         }
         
         var newExpense = createExpenseRequest.ToExpense();
+        newExpense.UserId = CurrentUserId;
         context.Expenses.Add(newExpense);
         
         try
         {
             await context.SaveChangesAsync();
-            return newExpense;
+            return await context.Expenses
+                .Where(e => e.UserId == CurrentUserId)
+                .Include(e => e.Category)
+                .FirstAsync(e => e.Id == newExpense.Id);
         }
         catch (DbUpdateException exception)
         {
@@ -59,13 +73,20 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
 
     public async Task<Expense?> UpdateExpenseAsync(int id, UpdateExpenseRequest updateExpenseRequest)
     {
-        var existingExpense = await context.Expenses.FindAsync(id);
+        var existingExpense =
+            await context
+                .Expenses
+                .Include(expense => expense.Category)
+                .FirstOrDefaultAsync(expense => expense.Id == id && expense.UserId == CurrentUserId);
+        
         if (existingExpense == null) return null;
         
         var categoryId = updateExpenseRequest.CategoryId;
         if (categoryId is not null)
         {
-            var categoryExists = await context.Categories.AnyAsync(cat => cat.Id == categoryId);
+            var categoryExists = await context.Categories
+                .AnyAsync(cat => cat.Id == categoryId && cat.UserId == CurrentUserId);
+            
             if (!categoryExists)
             {
                 throw new ExpensesServiceException(
@@ -102,7 +123,10 @@ public class ExpensesService(AppDbContext context, ILogger<ExpensesService> logg
 
     public async Task<bool> DeleteExpenseAsync(int id)
     {
-        var existingExpense = await context.Expenses.FindAsync(id);
+        var existingExpense = await context.Expenses
+            .Where(e => e.UserId == CurrentUserId)
+            .FirstOrDefaultAsync(e => e.Id == id);
+        
         if (existingExpense == null) return false;
         
         context.Expenses.Remove(existingExpense);
