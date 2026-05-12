@@ -50,6 +50,7 @@ public class CategoriesService(
         }
         
         var category = createCategoryRequest.ToCategory();
+        category.UserId = CurrentUserId;
         context.Categories.Add(category);
 
         try
